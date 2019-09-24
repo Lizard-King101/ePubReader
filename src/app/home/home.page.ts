@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { FilesManager } from '../services/files.service';
 
 @Component({
   selector: 'app-home',
@@ -6,7 +7,16 @@ import { Component } from '@angular/core';
   styleUrls: ['home.page.scss'],
 })
 export class HomePage {
+  display: string
+  constructor(
+    private files: FilesManager
+  ) {
+    files.listFileSys(1);
+  }
 
-  constructor() {}
+  onScan(ev: any) {
+    console.log(ev);
+    this.files.listFileSys(parseInt(ev.detail.value));
+  }
 
 }

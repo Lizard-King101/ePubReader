@@ -1,5 +1,7 @@
 {
   "name": "ePubReader",
-  "integrations": {},
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }

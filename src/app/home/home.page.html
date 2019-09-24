@@ -7,8 +7,30 @@
 </ion-header>
 
 <ion-content>
-  <div class="ion-padding">
-    The world is your oyster.
-    <p>If you get lost, the <a target="_blank" rel="noopener" href="https://ionicframework.com/docs/">docs</a> will be your guide.</p>
-  </div>
+  <ion-segment (ionChange)="onScan($event)">
+    <ion-segment-button value="1">
+      <ion-label>SD Card</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="2">
+      <ion-label>External</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="3">
+      <ion-label>Internal</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+  <ion-segment [(ngModel)]="display">
+    <ion-segment-button value="jcInfo">
+      <ion-label>Info</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="jcDebug">
+      <ion-label>Debug</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="jcError">
+      <ion-label>Error</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="fileSysArray">
+        <ion-label>Array</ion-label>
+      </ion-segment-button>
+  </ion-segment>
+  <div class="ion-padding" [innerHtml]="files[display]"></div>
 </ion-content>
