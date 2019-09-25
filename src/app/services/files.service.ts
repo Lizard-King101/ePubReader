@@ -1,146 +1,103 @@
 import { Injectable } from '@angular/core';
-import { File } from '@ionic-native/file/ngx';
-import { Diagnostic } from '@ionic-native/diagnostic/ngx';
+import { File, Entry } from '@ionic-native/file/ngx';
+import EPub from './epub.service';
+//import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 
 @Injectable()
 export class FilesManager{
-    jcInfo: string;
-    jcDebug: string;
-    jcError: string;
-    fileSysArray = [];
+    public fileArray = [];
+    private basePath = "";
 
     constructor(
-        private file: File,
-        private diagnostic: Diagnostic
-    ) {
-        
+        private file: File
+    ) { }
+
+    public loadFiles(which, recurse = true) {
+        this.fileArray = [];
+        switch(which) {
+            case 1:
+                this.basePath = this.file.externalRootDirectory;
+            break;
+            case 2:
+                this.basePath = this.file.externalDataDirectory;
+                break;
+            case 3:
+                this.basePath = this.file.dataDirectory;
+                break;
+            default:
+                alert( "which???:" + which);
+                return;
+        }
+        this.fileLoad("", recurse).then((files)=>{
+            console.log('FINAL', files);
+        });
     }
 
-    listFileSys(which:number){
-        this.jcInfo = "";
-        this.jcDebug = "";
-        this.jcError = "";
-
-        // <which> chooses the file system - see switch below
-        this.jcDebug += "\n" + `listFileSysSKOFLO(${which}: ${typeof which})`;
-
-        this.fileSysArray = [];
-        let basePath = "";
-
-        let tag = "unknown";
-
-        // ************** RECURSE *************
-        let jcListDir = (thisDir, ok2recurse = true)=>{
-
-            tag = "jcListDir: [" + thisDir + "]";
-
-            this.file.listDir(basePath, thisDir).then( (data) => {
-                tag = "listDir:" + thisDir;
-                this.jcError += "\n" + tag + ":" + JSON.stringify( data);
-                for( let ii = 0; ii < data.length; ii += 1){
-                this.jcError += "\n" + data[ii].name + (data[ii].isDirectory? " [D]" : " [F]");
-
-                let currentPath = thisDir;
-                currentPath += (currentPath.length ? "/" : "");
-                currentPath += data[ii].name;
-                this.jcError += "\n" + "currentPath:" + currentPath;
-
-                this.fileSysArray.push( currentPath);
-
-                    if( data[ii].isDirectory && ok2recurse){
-                        jcListDir( currentPath);         // RECURSE !!!
+    private fileLoad(path, recursive) {
+        return new Promise(res => {
+            let tmp = {};
+            this.file.listDir(this.basePath, path).then((files: Entry[]) => {
+                let waiting = 0;
+                let loaded = 0;
+                files.forEach((file: Entry, i)=>{
+                    console.log(path + ' : '+ file.name);
+                    
+                    if(this.isDirectory(file)) {
+                        let currentPath = path != '' ? path + '/' + file.name : file.name;
+                        if(recursive) {
+                            waiting ++;
+                            this.fileLoad(currentPath, recursive).then((data) => {
+                                console.log('loaded: '+currentPath, data);
+                                if(data && Object.keys(data).length > 0) {
+                                    tmp[file.name] = data;
+                                }
+                                loaded ++;
+                                if(waiting === loaded) { res(tmp); }
+                            });
+                        } else {
+                            tmp[file.name] = 'folder';
+                        }
+                    }else if(file.isFile) {
+                        if(file.name.split('.').pop() == 'epub'){
+                            this.createEpub(file);
+                        }
+                        console.log('file: '+path+' : '+ file.name);
+                        tmp[file.name] = file.fullPath;
+                    }else {
+                        tmp[file.name] = null;
                     }
-                }
-            }, (errData)=>{
-                tag = "listDir";
-                this.jcError += "\n" + tag + ":ERR:" + JSON.stringify( errData);
-            });
-        };
-        // ************** RECURSE *************
+                    if(i == files.length - 1 && waiting === loaded) {
+                        res(tmp);
+                    }
+                });
 
-        // ***********************
-        let runListDir = ()=>{
-            this.jcDebug += "\n" + "basePath:" + basePath;
+            }).catch((error)=>{
+                console.log('Error at: '+ path, error);
+                res(false);
+            })
+        })
+    }
 
-            // !!! START listing from basePath !!!
-            jcListDir(".");
+    isDirectory(file) {
+        let dir = true;
+        if (file.isDirectory) {
+            // check full name
+            if((['.','..', 'Android', 'data']).indexOf(file.name) >= 0) {dir = false;}
+
+            // check for . folders
+            if(file.name.split('.').length > 1) {dir = false;}
+
+        } else {
+            dir = false;
         }
 
-        // ***********************
-        switch(which)
-        {
-        case 1:
-            this.diagnostic.getExternalSdCardDetails()
-            .then( (data) => {
-            this.jcDebug += "\n" + "sd:" + JSON.stringify( data);
-            this.jcDebug += "\n" + "Number of cards: " + data.length;
-            for( let ii = 0; ii < data.length; ii += 1){
-                let thisElem = data[ii];
-                if( thisElem.type.toLowerCase() === "application" && thisElem.canWrite){
-                basePath = thisElem.filePath;
-                break;
-                }
-            }
-            if( !basePath){
-                this.jcDebug += "\n" + "no SD card found";
-                return;
-            }
-            runListDir();
-            }, (errData)=>{
-            tag = "getExternalSdCardDetails";
-            this.jcError += "\n" + tag + ":ERR:" + JSON.stringify( errData);
-            });
-        break;
-        case 2:
-            basePath = this.file.externalDataDirectory;
-            this.jcError += "\n" + "externalDataDirectory:" + basePath;
-            runListDir();
-            break;
-        case 3:
-            basePath = this.file.dataDirectory;
-            this.jcError += "\n" + "dataDirectory:";
-            runListDir();
-            break;
-        default:
-            alert( "which???:" + which);
-            return;
-        }
+        return dir;
+    }
 
-        // wait for all to comnplete, then show
-        // assume 1000 ms is adequate delay per promise
-        let lastFileSysLen = -1
-        let checkCount = 30; // max 30 * 1000 ms = 30 seconds
-
-        // ************** RECURSE *************
-        let checkComplete = () => {
-        this.jcDebug += "\n" + "checkComplete " + checkCount + " [" + this.fileSysArray.length + "]";
-            setTimeout( ()=>{
-
-                // fileSysArr length stable?
-                if( this.fileSysArray.length === lastFileSysLen){
-                checkCount = 0;
-                }
-                lastFileSysLen = this.fileSysArray.length;
-
-                checkCount -= 1;
-                if( checkCount > 0){
-                    checkComplete();    // recurse
-                } else {
-
-                    // STOP !!! and show FileSysArray
-                    this.jcInfo += "\n" + "show FileSysArray";
-                    this.jcInfo += "\n" + "fileSysArray.length = " + " [" + this.fileSysArray.length + "]";
-
-                    this.fileSysArray.sort();
-
-                    for( let elem of this.fileSysArray){
-                        this.jcInfo += "\n" + elem;
-                    }
-                }
-            }, 1000);
-        };
-        // ************** RECURSE *************
-        checkComplete();
+    createEpub(file: Entry) {
+        const epub = new EPub(this.basePath + file.name)
+        this.fileArray.push(epub);
+        console.log(epub);
     }
 
 }

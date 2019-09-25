@@ -10,7 +10,7 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { FilesManager } from './services/files.service';
 import { File } from '@ionic-native/file/ngx';
-import { Diagnostic } from '@ionic-native/diagnostic/ngx';
+//import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -21,7 +21,6 @@ import { Diagnostic } from '@ionic-native/diagnostic/ngx';
     SplashScreen,
     FilesManager,
     File,
-    Diagnostic,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
   bootstrap: [AppComponent]

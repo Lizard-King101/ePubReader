@@ -7,7 +7,7 @@
 </ion-header>
 
 <ion-content>
-  <ion-segment (ionChange)="onScan($event)">
+  <ion-segment (ionChange)="onScan()" [(ngModel)]="which">
     <ion-segment-button value="1">
       <ion-label>SD Card</ion-label>
     </ion-segment-button>
@@ -18,7 +18,11 @@
       <ion-label>Internal</ion-label>
     </ion-segment-button>
   </ion-segment>
-  <ion-segment [(ngModel)]="display">
+  <ion-item>
+      <ion-label>Recursive</ion-label>
+      <ion-toggle [(ngModel)]="recursive" (ionChange)="onScan()"></ion-toggle>
+    </ion-item>
+  <!-- <ion-segment [(ngModel)]="display">
     <ion-segment-button value="jcInfo">
       <ion-label>Info</ion-label>
     </ion-segment-button>
@@ -31,6 +35,10 @@
     <ion-segment-button value="fileSysArray">
         <ion-label>Array</ion-label>
       </ion-segment-button>
-  </ion-segment>
-  <div class="ion-padding" [innerHtml]="files[display]"></div>
+  </ion-segment> -->
+  <ion-list>
+    <ion-item *ngFor="let file of files.fileArray">
+      {{file}}
+    </ion-item>
+  </ion-list>
 </ion-content>

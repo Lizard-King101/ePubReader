@@ -7,16 +7,18 @@ import { FilesManager } from '../services/files.service';
   styleUrls: ['home.page.scss'],
 })
 export class HomePage {
-  display: string
+  display: string;
+  which: number = 1;
+  recursive: boolean;
   constructor(
     private files: FilesManager
   ) {
-    files.listFileSys(1);
+    files.loadFiles(this.which, this.recursive);
   }
 
-  onScan(ev: any) {
-    console.log(ev);
-    this.files.listFileSys(parseInt(ev.detail.value));
+  onScan() {
+    let which = typeof this.which == 'string' ? parseInt(this.which) : this.which;
+    this.files.loadFiles(which, this.recursive);
   }
 
 }
